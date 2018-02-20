@@ -19,8 +19,8 @@ data Class
   = N (Maybe Degree)
       Gender
       Number
-  | A Degree
-      Maybe Gender
+  | A (Maybe Degree)
+      Gender
       Number
   | DETArt DefT
            Gender
@@ -31,8 +31,7 @@ data Class
            Gender
            Number
   | PRO ProT
-        Maybe
-        Case
+        (Maybe Case)
         Person
         Gender
         Number
@@ -46,7 +45,13 @@ data Class
           Number
   | INTERJ
   | GenericClass Stream [Stream] [Stream]
-  deriving (Eq, Read, Show)
+  deriving (Eq, Show)
+
+data Degree
+  = Aument
+  | Dimin
+  | Superl
+  deriving (Eq, Show)
 
 data Gender
   = Masc
@@ -56,12 +61,6 @@ data Gender
 data Number
   = Sg
   | Pl
-  deriving (Eq, Show)
-
-data Degree
-  = Aument
-  | Dimin
-  | Superl
   deriving (Eq, Show)
 
 data DefT
@@ -74,7 +73,7 @@ data NumT
   | Ordin
   | Mult
   | Frac
-  | Colect
+  | Collect
   deriving (Eq, Show)
 
 data ProT
@@ -116,37 +115,3 @@ data VType
   | VY
   | VC
   deriving (Eq, Show)
-
----
--- mk
-mkClass :: Stream -> [Stream] -> [Stream] -> Class
-mkClass "N" [] = mkNoun
-mkClass "A" [] = mkA
-mkClass "DET" ("Art":t:[]) = mkArt t
-mkClass "DET" ("Num":t:[]) = mkNum t
-mkClass "PRO" [t] = mkPro t
-mkClass "V" [t] = mkV
-mkClass "ABREV" [] = mkAbrev
-mkClass c [] [] = read c
-
-mkDGN :: [Stream] -> Class
-mkNoun (d:g:n) =
-  if null n
-    then N (gender d) (number g) Nothing
-    else N (gender g) (number n) (degree d)
-
-mkA :: [Stream] -> Class
-mkA (d:g:n) =
-
-gender :: Stream -> Gender
-gender "m" = Masc
-gender "f" = Fem
-
-number :: Stream -> Number
-number "s" = Sg
-number "p"= Pl
-
-degree :: Stream -> Degree
-degree "A" = Aument
-degree "D" = Dimin
-degree "S" = Superl
