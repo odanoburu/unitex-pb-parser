@@ -51,23 +51,22 @@ classInst = do
 genericClass :: Parser Class
 genericClass = do
   c:ts <- classTraces
-  symbol ":"
-  ps <- params
-  return $ GenericClass c ts ps
+  ps <- params `startBy1` symbol ":"
+  return $ GenericClass (c, ts, ps)
 
 classTraces :: Parser [Stream]
 classTraces = charsNot (Just "Classe+Traços") "+: " `M.sepBy` char '+'
 
-params :: Parser [Stream]
-params = charsNot (Just "Params") " :" `M.sepBy` symbol ":"
+params :: Parser Stream
+params = charsNot (Just "Params") " :"
 
 ---
 -- class parsers
 noun :: Parser Class
-noun = liftM3 N (symbol ":" *> degree) gender number
+noun = mkClass N $ liftM3 (,,) degree gender number
 
 adjective :: Parser Class
-adjective = liftM3 A degree gender number
+adjective = mkClass A $ liftM3 (,,) degree gender number
 
 determiner :: Parser Class
 determiner = do
@@ -203,6 +202,18 @@ charsNot l cs = lexeme $ M.takeWhileP l (\c -> c `notElem` cs)
 
 strToData :: String -> a -> Parser a
 strToData s t = symbol s *> return t
+
+mkClass :: ([b] -> a) -> Parser b -> Parser a
+mkClass c p = do
+  ps <- p `startBy1` symbol ":"
+  return $ c ps
+
+---
+-- parser combinators
+startBy1 :: MonadPlus m => m a -> m sep -> m [a]
+startBy1 p sep = do
+  some (sep >> p)
+{-# INLINE startBy1 #-}
 
 ---
 -- lexing

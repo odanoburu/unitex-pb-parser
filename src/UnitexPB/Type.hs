@@ -16,35 +16,23 @@ data Entry =
 type WordP = (Stream, Stream)
 
 data Class
-  = N (Maybe Degree)
-      Gender
-      Number
-  | A (Maybe Degree)
-      Gender
-      Number
-  | DETArt DefT
-           Gender
-           Number
+  = N [((Maybe Degree), Gender, Number)]
+  | A [((Maybe Degree), Gender, Number)]
+  | DETArt [(DefT, Gender, Number)]
   | PREP
   | CONJ
-  | DETNum NumT
-           Gender
-           Number
-  | PRO ProT
-        (Maybe Case)
-        Person
-        Gender
-        Number
-  | V VType
-      Person
-      Number
+  | DETNum [(NumT, Gender, Number)]
+  | PRO [(ProT, (Maybe Case), Person, Gender, Number)]
+  | V [(VType, Person, Number)]
   | ADV
   | PFX
   | SIGL
-  | ABREV Gender
-          Number
+  | ABREV [(Gender, Number)]
   | INTERJ
-  | GenericClass Stream [Stream] [Stream]
+  | GenericClass ( Stream -- class
+                 , [Stream] -- traces
+                 , [Stream] -- [params]
+                  )
   deriving (Eq, Show)
 
 data Degree
