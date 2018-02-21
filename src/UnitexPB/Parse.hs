@@ -1,7 +1,6 @@
 module UnitexPB.Parse where
 
 import           UnitexPB.Type
-import           UnitexPB.Utils
 
 import           Control.Applicative
 import           Control.Monad
@@ -34,7 +33,7 @@ wordP = do
 
 classInst :: Parser Class
 classInst = do
-  c <- charsNot (Just "Class") "+ "
+  c <- charsNot (Just "Class") "+ :"
   case c of
     "N" -> noun
     "A" -> adjective
@@ -43,7 +42,7 @@ classInst = do
     "CONJ" -> return CONJ
     "PRO" -> pronoun
     "V" -> verb
-    "ADV" -> adverb
+    "ADV" -> return ADV
     "PFX" -> return PFX
     "SIGL" -> return SIGL
     "ABREV" -> abrev
@@ -59,13 +58,13 @@ genericClass = do
 classTraces :: Parser [Stream]
 classTraces = charsNot (Just "Classe+Traços") "+: " `M.sepBy` char '+'
 
-params :: Parser Stream
-params = notChar ':' `M.sepBy` char ':'
+params :: Parser [Stream]
+params = charsNot (Just "Params") " :" `M.sepBy` symbol ":"
 
 ---
 -- class parsers
 noun :: Parser Class
-noun = liftM3 N degree gender number
+noun = liftM3 N (symbol ":" *> degree) gender number
 
 adjective :: Parser Class
 adjective = liftM3 A degree gender number
@@ -137,6 +136,33 @@ pronoun = do
     obl      = strToData "O" Obl
     refl     = strToData "R" Refl
 
+verb :: Parser Class
+verb = do
+  symbol ":"
+  vt <-
+    inf <|> ger <|> part <|> pres <|> preti <|> pretp <|> futpinf <|>
+    pretmp <|> press <|> imps <|> futs <|> imp <|> futp
+    M.<?> "verb form"
+  p <- person
+  n <- number
+  return $ V vt p n
+  where
+    inf     = strToData "W" VW
+    ger     = strToData "G" VG
+    part    = strToData "K" VK
+    pres    = strToData "P" VP
+    preti   = strToData "I" VI
+    pretp   = strToData "J" VJ
+    futpinf = strToData "F" VF
+    pretmp  = strToData "Q" VQ
+    press   = strToData "S" VS
+    imps    = strToData "T" VT
+    futs    = strToData "U" VU
+    imp     = strToData "Y" VY
+    futp    = strToData "C" VC
+
+abrev :: Parser Class
+abrev = liftM2 ABREV (symbol ":" *> gender) number
 
 ---
 -- param parsers
