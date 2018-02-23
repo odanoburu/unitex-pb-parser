@@ -21,7 +21,7 @@ entry :: Parser Entry
 entry = do
   w <- wordP
   symbol "."
-  c <- classInst <|> genericClass
+  c <- (M.try classInst) <|> genericClass
   return $ Entry w c
 
 wordP :: Parser WordP
@@ -35,30 +35,30 @@ classInst :: Parser Class
 classInst = do
   c <- charsNot (Just "Class") "+ :"
   case c of
-    "N" -> noun
-    "A" -> adjective
-    "DET" -> determiner
-    "PREP" -> return PREP
-    "CONJ" -> return CONJ
-    "PRO" -> pronoun
-    "V" -> verb
-    "ADV" -> return ADV
-    "PFX" -> return PFX
-    "SIGL" -> return SIGL
-    "ABREV" -> abrev
+    "N"      -> noun
+    "A"      -> adjective
+    "DET"    -> determiner
+    "PREP"   -> return PREP
+    "CONJ"   -> return CONJ
+    "PRO"    -> pronoun
+    "V"      -> verb
+    "ADV"    -> return ADV
+    "PFX"    -> return PFX
+    "SIGL"   -> return SIGL
+    "ABREV"  -> abrev
     "INTERJ" -> return INTERJ
 
 genericClass :: Parser Class
 genericClass = do
   c:ts <- classTraces
-  ps <- params `startBy1` symbol ":"
-  return $ GenericClass (c, ts, ps)
+  mkClass (GenericClass . ((,,) c ts)) params
 
 classTraces :: Parser [Stream]
-classTraces = charsNot (Just "Classe+Traços") "+: " `M.sepBy` char '+'
+classTraces =
+  charsNot (Just "Classe+Traços") "+ :" `M.sepBy` symbol "+"
 
 params :: Parser Stream
-params = charsNot (Just "Params") " :"
+params = charsNot (Just "Params") " :\n"
 
 ---
 -- class parsers
@@ -76,49 +76,32 @@ determiner = do
 
 article :: Parser Class
 article = do
-  symbol "Art"
-  symbol "+"
-  at <- definite <|> indefinite M.<?> "article type"
-  symbol ":"
-  g <- gender
-  n <- number
-  return $ DETArt at g n
+  symbol "Art+"
+  at <- artTp
+  mkClass DETArt $ liftM2 ((,,) at) gender number
   where
-    definite   = strToData "Def" Def
+    definite = strToData "Def" Def
     indefinite = strToData "Ind" Indef
+    artTp = (definite <|> indefinite M.<?> "article type")
 
 numeral :: Parser Class
 numeral = do
   symbol "Num"
-  symbol ":"
-  nt <-
-    cardinal <|> ordinal <|> multiplicative <|> fractional <|>
-    collective M.<?> "numeral type"
-  g <- gender
-  n <- number
-  return $ DETNum nt g n
+  mkClass DETNum $ liftM3 (,,) numTp gender number
   where
-    cardinal       = strToData "C" Card
-    ordinal        = strToData "O" Ordin
+    cardinal = strToData "C" Card
+    ordinal = strToData "O" Ordin
     multiplicative = strToData "M" Mult
-    fractional     = strToData "F" Frac
-    collective     = strToData "L" Collect
+    fractional = strToData "F" Frac
+    collective = strToData "L" Collect
+    numTp =
+      cardinal <|> ordinal <|> multiplicative <|> fractional <|>
+      collective M.<?> "numeral type"
 
 pronoun :: Parser Class
 pronoun = do
-  symbol "PRO"
-  symbol "+"
-  pt <-
-    demons <|> indef <|> relat <|> interr <|> treat <|> poss <|>
-    personal M.<?> "pronoun type"
-  symbol ":"
-  mc <-
-    optional
-      (acc <|> dat <|> nom <|> obl <|> refl M.<?> "pronoun case")
-  p <- person
-  g <- gender
-  n <- number
-  return $ PRO pt mc p g n
+  symbol "PRO+"
+  mkClass PRO $ liftM5 (,,,,) proTp caseTp person gender number
   where
     -- type
     demons   = strToData "Dem" Dem
@@ -128,23 +111,21 @@ pronoun = do
     treat    = strToData "Tra" Tra
     poss     = strToData "Pos" Pos
     personal = strToData "Pes" Pes
+    proTp    =
+      (demons <|> indef <|> relat <|> interr <|> treat <|> poss <|>
+       personal M.<?> "pronoun type") <* symbol ":"
     -- case
-    acc      = strToData "A" Acc
-    dat      = strToData "D" Dat
-    nom      = strToData "N" Nom
-    obl      = strToData "O" Obl
-    refl     = strToData "R" Refl
+    acc  = strToData "A" Acc
+    dat  = strToData "D" Dat
+    nom  = strToData "N" Nom
+    obl  = strToData "O" Obl
+    refl = strToData "R" Refl
+    caseTp =
+      optional
+        (acc <|> dat <|> nom <|> obl <|> refl M.<?> "pronoun case")
 
 verb :: Parser Class
-verb = do
-  symbol ":"
-  vt <-
-    inf <|> ger <|> part <|> pres <|> preti <|> pretp <|> futpinf <|>
-    pretmp <|> press <|> imps <|> futs <|> imp <|> futp
-    M.<?> "verb form"
-  p <- person
-  n <- number
-  return $ V vt p n
+verb = mkClass V $ liftM3 (,,) verbTp person number
   where
     inf     = strToData "W" VW
     ger     = strToData "G" VG
@@ -159,9 +140,13 @@ verb = do
     futs    = strToData "U" VU
     imp     = strToData "Y" VY
     futp    = strToData "C" VC
+    verbTp  =
+      inf <|> ger <|> part <|> pres <|> preti <|> pretp <|> futpinf <|>
+      pretmp <|> press <|> imps <|> futs <|> imp <|> futp
+      M.<?> "verb form"
 
 abrev :: Parser Class
-abrev = liftM2 ABREV (symbol ":" *> gender) number
+abrev = mkClass ABREV $ liftM2 (,) gender number
 
 ---
 -- param parsers

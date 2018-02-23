@@ -2,3 +2,5 @@
 
 - check with grep which classes have multiple params (theoretically
   all of them, I know)
+- continue transition to use lists
+- deal with X's
