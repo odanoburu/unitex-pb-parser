@@ -1,1 +1,10 @@
-# unitex-pb-parser
+#+TITLE: unitex-pb parser
+
+parse lexical lists from
+www.nilc.icmc.usp.br/nilc/projects/unitex-pb/web/dicionarios.html.
+
+* stats
+  most common canonic forms:
+  : cat delaf.dic | cut --delimiter=',' -f 2 | cut --delimiter='.' -f 1 | sort | uniq -c | sort -nr > canonic.stats
+  most common classes:
+  : cat delaf.dic | cut -d '.' -f 2 | sort | uniq -c | sort -nr > classes.delaf

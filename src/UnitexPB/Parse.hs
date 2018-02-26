@@ -9,19 +9,20 @@ import           Data.Void
 import qualified Text.Megaparsec as M
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import           Text.Megaparsec.Error
 
 type Parser = M.Parsec Void Stream
 
 ---
 -- top-level parsers
 dictionary :: Parser [Entry]
-dictionary = ws *> entry `M.sepBy` eol <* M.eof
+dictionary = ws *> entry `M.endBy` eol <* M.eof
 
 entry :: Parser Entry
 entry = do
   w <- wordP
   symbol "."
-  c <- M.try classInst
+  c <- M.withRecovery recoverLine classInst
   return $ Entry w c
 
 wordP :: Parser WordP
@@ -47,7 +48,7 @@ classInst = do
     "SIGL"   -> return SIGL
     "ABREV"  -> abrev
     "INTERJ" -> return INTERJ
-    _ -> charsNot (Just "rest of line") "\n" *> return (NotParsed c)
+    _ -> empty M.<?> "unknown class"
 
 genericClass :: Parser Class
 genericClass = do
@@ -188,6 +189,11 @@ mkClass :: ([b] -> a) -> Parser b -> Parser a
 mkClass c p = do
   ps <- p `startBy1` symbol ":"
   return $ c ps
+
+recoverLine :: ParseError t e -> Parser Class
+recoverLine pe =
+  charsNot (Just "rest of line") "\n" *>
+  (return . NotParsed $ show $ errorPos pe)
 
 ---
 -- parser combinators
