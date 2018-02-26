@@ -11,17 +11,19 @@ copyright:           2018 bruno cuconato
 category:            NLP
 build-type:          Simple
 cabal-version:       >=1.10
-extra-source-files:  README.md
+extra-source-files:  README.org
 
 library
   exposed-modules: UnitexPB.Parse, UnitexPB.Type
+--  other-modules:
   build-depends: base >=4.7 && <5, megaparsec > 6 && <7
   hs-source-dirs: src
   default-language: Haskell2010
 
-executable unitex-pb-parser
+executable unitexpb
   hs-source-dirs:      src
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5,
                        megaparsec > 6 && < 7
+  other-modules:       UnitexPB.Parse, UnitexPB.Type

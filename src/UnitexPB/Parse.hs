@@ -21,7 +21,7 @@ entry :: Parser Entry
 entry = do
   w <- wordP
   symbol "."
-  c <- (M.try classInst) <|> genericClass
+  c <- M.try classInst
   return $ Entry w c
 
 wordP :: Parser WordP
@@ -47,11 +47,12 @@ classInst = do
     "SIGL"   -> return SIGL
     "ABREV"  -> abrev
     "INTERJ" -> return INTERJ
+    _ -> charsNot (Just "rest of line") "\n" *> return (NotParsed c)
 
 genericClass :: Parser Class
 genericClass = do
   c:ts <- classTraces
-  mkClass (GenericClass . ((,,) c ts)) params
+  mkClass (GenericClass . (,,) c ts) params
 
 classTraces :: Parser [Stream]
 classTraces =
@@ -71,8 +72,7 @@ adjective = mkClass A $ liftM3 (,,) degree gender number
 determiner :: Parser Class
 determiner = do
   symbol "+"
-  dt <- article <|> numeral M.<?> "determiner type"
-  return dt
+  article <|> numeral M.<?> "determiner type"
 
 article :: Parser Class
 article = do
@@ -82,7 +82,7 @@ article = do
   where
     definite = strToData "Def" Def
     indefinite = strToData "Ind" Indef
-    artTp = (definite <|> indefinite M.<?> "article type")
+    artTp = definite <|> indefinite M.<?> "article type"
 
 numeral :: Parser Class
 numeral = do
@@ -151,30 +151,26 @@ abrev = mkClass ABREV $ liftM2 (,) gender number
 ---
 -- param parsers
 degree :: Parser (Maybe Degree)
-degree = do
-  optional (aument <|> dimin <|> superl M.<?> "degree")
+degree = optional (aument <|> dimin <|> superl M.<?> "degree")
   where
     aument = strToData "A" Aument
     dimin  = strToData "D" Dimin
     superl = strToData "S" Superl
 
 gender :: Parser Gender
-gender = do
-  masc <|> fem M.<?> "gender"
+gender = masc <|> fem M.<?> "gender"
   where
     masc = strToData "m" Masc
     fem  = strToData "f" Fem
 
 number :: Parser Number
-number = do
-  sg <|> pl M.<?> "number"
+number = sg <|> pl M.<?> "number"
   where
     sg = strToData "s" Sg
     pl = strToData "p" Pl
 
 person :: Parser Person
-person = do
-  p1 <|> p2 <|> p3 M.<?> "person"
+person = p1 <|> p2 <|> p3 M.<?> "person"
   where
     p1 = strToData "1" P1
     p2 = strToData "2" P2
@@ -183,7 +179,7 @@ person = do
 ---
 -- utility parsers
 charsNot :: Maybe String -> Stream -> Parser Stream
-charsNot l cs = lexeme $ M.takeWhileP l (\c -> c `notElem` cs)
+charsNot l cs = lexeme $ M.takeWhileP l (`notElem` cs)
 
 strToData :: String -> a -> Parser a
 strToData s t = symbol s *> return t
@@ -196,8 +192,7 @@ mkClass c p = do
 ---
 -- parser combinators
 startBy1 :: MonadPlus m => m a -> m sep -> m [a]
-startBy1 p sep = do
-  some (sep >> p)
+startBy1 p sep = some (sep >> p)
 {-# INLINE startBy1 #-}
 
 ---
@@ -210,3 +205,11 @@ lexeme = L.lexeme ws
 
 ws :: Parser ()
 ws = void $ M.takeWhileP (Just "space") (== ' ')
+
+---
+-- main
+parseMain :: [FilePath] -> IO ()
+parseMain fps = do
+  ds <- mapM (\file -> M.runParser dictionary file <$> readFile file)  fps
+  mapM_ print ds
+  return ()

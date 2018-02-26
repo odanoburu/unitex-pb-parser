@@ -16,19 +16,20 @@ data Entry =
 type WordP = (Stream, Stream)
 
 data Class
-  = N [((Maybe Degree), Gender, Number)]
-  | A [((Maybe Degree), Gender, Number)]
+  = N [(Maybe Degree, Gender, Number)]
+  | A [(Maybe Degree, Gender, Number)]
   | DETArt [(DefT, Gender, Number)]
   | PREP
   | CONJ
   | DETNum [(NumT, Gender, Number)]
-  | PRO [(ProT, (Maybe Case), Person, Gender, Number)]
+  | PRO [(ProT, Maybe Case, Person, Gender, Number)]
   | V [(VType, Person, Number)]
   | ADV
   | PFX
   | SIGL
   | ABREV [(Gender, Number)]
   | INTERJ
+  | NotParsed Stream
   | GenericClass ( Stream -- class
                  , [Stream] -- traces
                  , [Stream] -- [params]
