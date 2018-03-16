@@ -8,3 +8,6 @@ www.nilc.icmc.usp.br/nilc/projects/unitex-pb/web/dicionarios.html.
   : cat delaf.dic | cut --delimiter=',' -f 2 | cut --delimiter='.' -f 1 | sort | uniq -c | sort -nr > canonic.stats
   most common classes:
   : cat delaf.dic | cut -d '.' -f 2 | sort | uniq -c | sort -nr > classes.delaf
+* scripts
+to change original format using awk:
+: awk -F'[,.:]' '{print $2"\t"$1"\t"$3"\t"$4}'
