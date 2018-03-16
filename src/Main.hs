@@ -6,7 +6,7 @@ import System.Environment
 
 main :: IO ()
 main = do
-  (a:at) <- getArgs
-  case a of
-    "parse" -> parseMain at
+  (c:a:at) <- getArgs
+  case c of
+    "parse" -> parseMain a
     _ -> return ()

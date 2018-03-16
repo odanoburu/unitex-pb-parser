@@ -214,8 +214,10 @@ ws = void $ M.takeWhileP (Just "space") (== ' ')
 
 ---
 -- main
-parseMain :: [FilePath] -> IO ()
-parseMain fps = do
-  ds <- mapM (\file -> M.runParser dictionary file <$> readFile file)  fps
-  mapM_ print ds
+parseMain :: FilePath -> IO ()
+parseMain fp = do
+  ees <- M.runParser dictionary fp <$> readFile fp
+  case ees of
+    Left err -> putStr $ parseErrorPretty err
+    Right es -> print es
   return ()
